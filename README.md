@@ -43,3 +43,10 @@ Create a new Pull Request.
 - Kaggle
 - GitHub
 
+## GitHub Layout
+
+- Image Datasets
+- Google Colab
+- ReadMe File
+
+
