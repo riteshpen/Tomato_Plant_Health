@@ -2,6 +2,7 @@ import streamlit as st
 import tensorflow as tf
 from PIL import Image, ImageOps
 import numpy as np
+import io
 
 # Define the model architecture
 def build_model():
@@ -18,47 +19,44 @@ def build_model():
     ])
     return model
 
-model = build_model()
-
-# Load the trained weights
-model.load_weights("/Users/ritesh/tomato_disease_classification/models/tomato-disease/saved_models/models/model_3.weights.h5")
-
-# Recompile the model
-model.compile(optimizer='adam', 
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
-              metrics=['accuracy'])
-
-# Function to process the uploaded image
-def process_image(image_data):
-    size = (256, 256)
-    image = ImageOps.fit(image_data, size, Image.LANCZOS)
-    img = np.asarray(image)
-    img = img / 255.0
-    img = np.expand_dims(img, axis=0)
-    return img
-
-# Function to make predictions
-def predict(image_data):
-    processed_image = process_image(image_data)
-    prediction = model.predict(processed_image)
-    return prediction
-
 # Streamlit UI
 st.title("Tomato Plant Disease Classifier")
-st.write("Upload an image of a tomato plant to classify it as healthy, late blight, or early blight.")
+st.write("Upload your model weights file and an image to classify it.")
 
-# Image upload
-uploaded_file = st.file_uploader("Choose an image...", type="jpg")
+# Upload the model weights file
+uploaded_weights = st.file_uploader("Upload model weights...", type=["h5"])
+if uploaded_weights is not None:
+    model = build_model()
+    model.load_weights(uploaded_weights)
+    model.compile(optimizer='adam', 
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
+                  metrics=['accuracy'])
+    st.write("Model weights loaded successfully.")
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption='Uploaded Image.', use_column_width=True)
-    st.write("")
-    st.write("Classifying...")
-    
-    prediction = predict(image)
-    class_names = ['Healthy', 'Late Blight', 'Early Blight']
-    predicted_class = class_names[np.argmax(prediction)]
-    
-    st.write(f"Prediction: {predicted_class}")
-    st.write(f"Raw prediction: {prediction}")
+    # Upload the image
+    uploaded_image = st.file_uploader("Choose an image...", type=["jpg", "png"])
+    if uploaded_image is not None:
+        image = Image.open(uploaded_image).convert("RGB")
+        st.image(image, caption='Uploaded Image.', use_column_width=True)
+        st.write("Classifying...")
+
+        # Predict
+        def process_image(image_data):
+            size = (256, 256)  # Input size used during training
+            image = ImageOps.fit(image_data, size, Image.LANCZOS)
+            img = np.asarray(image)
+            img = img / 255.0  # Rescale the image
+            img = np.expand_dims(img, axis=0)  # Add batch dimension
+            return img
+
+        def predict(image_data):
+            processed_image = process_image(image_data)
+            prediction = model.predict(processed_image)
+            return prediction
+
+        prediction = predict(image)
+        class_names = ['Healthy', 'Late Blight', 'Early Blight']  # Update based on your model's classes
+        predicted_class = class_names[np.argmax(prediction)]
+
+        st.write(f"Prediction: {predicted_class}")
+        st.write(f"Raw prediction: {prediction}")
