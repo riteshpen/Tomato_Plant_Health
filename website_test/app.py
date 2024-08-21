@@ -17,6 +17,17 @@ def build_model():
     ])
     return model
 
+model = build_model()
+try:
+    model.load_weights("path_to_model_weights.h5")
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+                  metrics=['accuracy'])
+    st.write("Model weights loaded successfully.")
+except Exception as e:
+    st.error(f"Error loading model weights: {e}")
+
+
 st.title("Tomato Plant Disease Classifier")
 st.write("Upload your model weights file and an image to classify it.")
 
