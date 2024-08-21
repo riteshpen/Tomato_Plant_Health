@@ -20,7 +20,7 @@ def build_model():
 
 model = build_model()
 
-# Load the trained weights
+# Load the trained weights (Change this model directory to whatever your saved model directory is)
 model.load_weights("/Users/ritesh/tomato_disease_classification/models/tomato-disease/saved_models/models/model_3.weights.h5")
 
 # Recompile the model with the correct loss function
