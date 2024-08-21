@@ -24,7 +24,7 @@ st.title("Tomato Plant Disease Classifier")
 st.write("Upload your model weights file and an image to classify it.")
 
 # Upload the model weights file
-uploaded_weights = st.file_uploader("Upload model weights...", type=["h5"])
+uploaded_weights = st.file_uploader("Upload model weights...", type=["jpeg"])
 if uploaded_weights is not None:
     model = build_model()
     model.load_weights(uploaded_weights)
