@@ -21,7 +21,7 @@ def build_model():
 model = build_model()
 
 # Load the trained weights
-model.load_weights("/saved_models/model_3.weights.h5")
+model.load_weights("website_test/saved_models/model_3.weights.h5")
 
 # Recompile the model with the correct loss function
 model.compile(optimizer='adam', 
