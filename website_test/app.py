@@ -3,75 +3,62 @@ import tensorflow as tf
 from PIL import Image, ImageOps
 import numpy as np
 
+# Define the model architecture (should match the architecture used during training)
 def build_model():
     base_model = tf.keras.applications.EfficientNetB0(input_shape=(256, 256, 3),
                                                       include_top=False,
-                                                      weights=None)
-    base_model.trainable = False
+                                                      weights=None)  # No pre-trained weights
+    base_model.trainable = False  # Freeze the base model
     model = tf.keras.models.Sequential([
         base_model,
         tf.keras.layers.GlobalAveragePooling2D(),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dropout(0.4),
-        tf.keras.layers.Dense(3, activation='softmax')
+        tf.keras.layers.Dense(3, activation='softmax')  # Assuming 3 classes
     ])
     return model
 
 model = build_model()
-try:
-    model.load_weights("path_to_model_weights.h5")
-    model.compile(optimizer='adam',
-                  loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-                  metrics=['accuracy'])
-    st.write("Model weights loaded successfully.")
-except Exception as e:
-    st.error(f"Error loading model weights: {e}")
 
+# Load the trained weights
+model.load_weights("/Users/ritesh/tomato_disease_classification/models/tomato-disease/saved_models/models/model_3.weights.h5")
 
+# Recompile the model with the correct loss function
+model.compile(optimizer='adam', 
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
+              metrics=['accuracy'])
+
+# Function to process the uploaded image
+def process_image(image_data):
+    size = (256, 256)  # Assuming this was the input size used during training
+    image = ImageOps.fit(image_data, size, Image.LANCZOS)
+    img = np.asarray(image)
+    img = img / 255.0  # Rescale the image
+    img = np.expand_dims(img, axis=0)  # Add batch dimension
+    return img
+
+# Function to make predictions
+def predict(image_data):
+    processed_image = process_image(image_data)
+    prediction = model.predict(processed_image)
+    return prediction
+
+# Streamlit UI
 st.title("Tomato Plant Disease Classifier")
-st.write("Upload your model weights file and an image to classify it.")
+st.write("Upload an image of a tomato plant to classify it as healthy, late blight, or early blight.")
 
-# Upload the model weights file
-uploaded_weights = st.file_uploader("Upload model weights...", type=["h5"])
-if uploaded_weights is not None:
-    model = build_model()
-    try:
-        model.load_weights(uploaded_weights)
-        model.compile(optimizer='adam', 
-                      loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
-                      metrics=['accuracy'])
-        st.write("Model weights loaded successfully.")
-    except Exception as e:
-        st.error(f"Error loading model weights: {e}")
+# Image upload
+uploaded_file = st.file_uploader("Choose an image...", type="jpg")
 
-    # Upload the image
-    uploaded_image = st.file_uploader("Choose an image...", type=["jpg", "png"])
-    if uploaded_image is not None:
-        image = Image.open(uploaded_image).convert("RGB")
-        st.image(image, caption='Uploaded Image.', use_column_width=True)
-        st.write("Classifying...")
-
-        def process_image(image_data):
-            size = (256, 256)  # Ensure this matches the input size used during training
-            image = ImageOps.fit(image_data, size, Image.LANCZOS)
-            img = np.asarray(image)
-            img = img / 255.0  # Rescale the image as done during training
-            img = np.expand_dims(img, axis=0)  # Add batch dimension
-            return img
-
-
-        def predict(image_data):
-            processed_image = process_image(image_data)
-            prediction = model.predict(processed_image)
-            return prediction
-
-        try:
-            prediction = predict(image)
-            class_names = ['Healthy', 'Late Blight', 'Early Blight']
-            predicted_class = class_names[np.argmax(prediction)]
-            st.write(f"Prediction: {predicted_class}")
-            st.write(f"Raw prediction: {prediction}")
-        except Exception as e:
-            st.error(f"Error during prediction: {e}")
-else:
-    st.write("Please upload the model weights file.")
+if uploaded_file is not None:
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption='Uploaded Image.', use_column_width=True)
+    st.write("")
+    st.write("Classifying...")
+    
+    prediction = predict(image)
+    class_names = ['Healthy', 'Late Blight', 'Early Blight']  # Update this list based on your model's classes
+    predicted_class = class_names[np.argmax(prediction)]
+    
+    st.write(f"Prediction: {predicted_class}")
+    st.write(f"Raw prediction: {prediction}")
