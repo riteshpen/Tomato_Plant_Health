@@ -13,6 +13,8 @@ Farmers can use this technology to predict whether their tomato plant has any di
 
 [WEBSITE](https://tomatoplantclassifier.streamlit.app/)
 
+[DEMO Video](https://github.com/user-attachments/assets/6f3630c0-4889-4bbe-a1cd-89e4b0b5565c)
+
 ## Stages of Preparing Data
 
 ### Data Cleaning
