@@ -41,12 +41,13 @@ if uploaded_weights is not None:
         st.write("Classifying...")
 
         def process_image(image_data):
-            size = (256, 256)
+            size = (256, 256)  # Ensure this matches the input size used during training
             image = ImageOps.fit(image_data, size, Image.LANCZOS)
             img = np.asarray(image)
-            img = img / 255.0
-            img = np.expand_dims(img, axis=0)
+            img = img / 255.0  # Rescale the image as done during training
+            img = np.expand_dims(img, axis=0)  # Add batch dimension
             return img
+
 
         def predict(image_data):
             processed_image = process_image(image_data)
