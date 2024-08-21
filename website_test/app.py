@@ -3,7 +3,7 @@ import tensorflow as tf
 from PIL import Image, ImageOps
 import numpy as np
 
-# Define the model architecture (should match the architecture used during training)
+# Define the model architecture
 def build_model():
     base_model = tf.keras.applications.EfficientNetB0(input_shape=(256, 256, 3),
                                                       include_top=False,
@@ -20,21 +20,21 @@ def build_model():
 
 model = build_model()
 
-# Load the trained weights 
-model.load_weights("saved_models/model_3.weights.h5")
+# Load the trained weights
+model.load_weights("models/model_3.weights.h5")
 
-# Recompile the model with the correct loss function
+# Recompile the model
 model.compile(optimizer='adam', 
               loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
               metrics=['accuracy'])
 
 # Function to process the uploaded image
 def process_image(image_data):
-    size = (256, 256)  # Assuming this was the input size used during training
+    size = (256, 256)
     image = ImageOps.fit(image_data, size, Image.LANCZOS)
     img = np.asarray(image)
-    img = img / 255.0  # Rescale the image
-    img = np.expand_dims(img, axis=0)  # Add batch dimension
+    img = img / 255.0
+    img = np.expand_dims(img, axis=0)
     return img
 
 # Function to make predictions
@@ -57,7 +57,7 @@ if uploaded_file is not None:
     st.write("Classifying...")
     
     prediction = predict(image)
-    class_names = ['Healthy', 'Late Blight', 'Early Blight']  # Update this list based on your model's classes
+    class_names = ['Healthy', 'Late Blight', 'Early Blight']
     predicted_class = class_names[np.argmax(prediction)]
     
     st.write(f"Prediction: {predicted_class}")
