@@ -1,70 +1,64 @@
-import os
-import traceback
-from flask import Flask, render_template, request, jsonify
+import streamlit as st
 import tensorflow as tf
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 
-app = Flask(__name__)
+# Define the model architecture (should match the architecture used during training)
+def build_model():
+    base_model = tf.keras.applications.EfficientNetB0(input_shape=(256, 256, 3),
+                                                      include_top=False,
+                                                      weights=None)  # No pre-trained weights
+    base_model.trainable = False  # Freeze the base model
+    model = tf.keras.models.Sequential([
+        base_model,
+        tf.keras.layers.GlobalAveragePooling2D(),
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.Dense(3, activation='softmax')  # Assuming 3 classes
+    ])
+    return model
 
-# Load your trained model
-model_path = '/Users/ritesh/tomato_disease_classification/models/tomato-disease/saved_model/models/model_1.h5'
-try:
-    model = tf.saved_model.load(model_path)
-    print(f"Model loaded successfully from {model_path}")
-except Exception as e:
-    print(f"Error loading model: {str(e)}")
-    print(traceback.format_exc())
+model = build_model()
 
-# Define class names
-class_names = ['Early Blight', 'Late Blight', 'Healthy']
+# Load the trained weights
+model.load_weights("/Users/ritesh/tomato_disease_classification/models/tomato-disease/saved_models/models/model_3.weights.h5")
 
-def preprocess_image(image):
-    try:
-        img = Image.open(image).convert('RGB')
-        print(f"Image opened successfully. Size: {img.size}")
-        img = img.resize((224, 224))  # Adjust size according to your model's input shape
-        print(f"Image resized to {img.size}")
-        img_array = np.array(img) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
-        print(f"Image preprocessed. Shape: {img_array.shape}")
-        return img_array
-    except Exception as e:
-        print(f"Error in preprocess_image: {str(e)}")
-        print(traceback.format_exc())
-        raise
+# Recompile the model with the correct loss function
+model.compile(optimizer='adam', 
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
+              metrics=['accuracy'])
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part'})
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'})
-        
-        if file:
-            try:
-                img_array = preprocess_image(file)
-                input_tensor = tf.convert_to_tensor(img_array, dtype=tf.float32)
-                infer = model.signatures["serving_default"]
-                predictions = infer(input_tensor)
-                output_tensor = predictions['dense_2'] 
-                
-                predicted_class = class_names[np.argmax(output_tensor.numpy()[0])]
-                confidence = float(np.max(output_tensor.numpy()[0]))
-                
-                return jsonify({
-                    'prediction': predicted_class,
-                    'confidence': confidence
-                })
-            except Exception as e:
-                print(f"Error processing image: {str(e)}")
-                print(traceback.format_exc())
-                return jsonify({'error': str(e)})
+# Function to process the uploaded image
+def process_image(image_data):
+    size = (256, 256)  # Assuming this was the input size used during training
+    image = ImageOps.fit(image_data, size, Image.LANCZOS)
+    img = np.asarray(image)
+    img = img / 255.0  # Rescale the image
+    img = np.expand_dims(img, axis=0)  # Add batch dimension
+    return img
+
+# Function to make predictions
+def predict(image_data):
+    processed_image = process_image(image_data)
+    prediction = model.predict(processed_image)
+    return prediction
+
+# Streamlit UI
+st.title("Tomato Plant Disease Classifier")
+st.write("Upload an image of a tomato plant to classify it as healthy, late blight, or early blight.")
+
+# Image upload
+uploaded_file = st.file_uploader("Choose an image...", type="jpg")
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption='Uploaded Image.', use_column_width=True)
+    st.write("")
+    st.write("Classifying...")
     
-    return render_template('index.html')
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    prediction = predict(image)
+    class_names = ['Healthy', 'Late Blight', 'Early Blight']  # Update this list based on your model's classes
+    predicted_class = class_names[np.argmax(prediction)]
+    
+    st.write(f"Prediction: {predicted_class}")
+    st.write(f"Raw prediction: {prediction}")
