@@ -21,7 +21,7 @@ def build_model():
 model = build_model()
 
 # Load the trained weights
-model.load_weights("models/model_3.weights.h5")
+model.load_weights("/Users/ritesh/tomato_disease_classification/models/tomato-disease/saved_models/models/model_3.weights.h5")
 
 # Recompile the model
 model.compile(optimizer='adam', 
